@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0E1218" />
+<meta name="description" content="Weather 11 — sailor’s almanac desk for wind-barometer forecasting, dew point, wind chill, THI, heat index, and temperature conversion. First released 1986." />
+<title>Weather 11</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E1218'/%3E%3Ccircle cx='16' cy='16' r='12' fill='%238FA8B8'/%3E%3Ccircle cx='16' cy='16' r='9.2' fill='%23EEF1F4'/%3E%3Crect x='15' y='8.3' width='2' height='2.8' fill='%230E1218'/%3E%3Crect x='15' y='20.9' width='2' height='2.8' fill='%230E1218'/%3E%3Crect x='8.3' y='15' width='2.8' height='2' fill='%230E1218'/%3E%3Crect x='20.9' y='15' width='2.8' height='2' fill='%230E1218'/%3E%3Cline x1='16' y1='16' x2='21.6' y2='10.1' stroke='%230E1218' stroke-width='2.4' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%238FA8B8'/%3E%3Ccircle cx='16' cy='16' r='1.2' fill='%230E1218'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" />
+<style>
+:root {
+  --bg: #0e1218;
+  --surface: #171d26;
+  --surface-2: #1e2632;
+  --fg: #eef1f4;
+  --muted: #9aa6b2;
+  --subtle: #6d7884;
+  --accent: #8fa8b8;
+  --border: #2a3340;
+  --warn: #c4a574;
+  --gauge: #dce4ea;
+  --gauge-fg: #121820;
+  --font: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --display: "Fraunces", "Iowan Old Style", Palatino, Georgia, serif;
+  --radius: 0.75rem;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+html { -webkit-font-smoothing: antialiased; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  line-height: 1.5;
+}
+button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+h1, h2 { text-wrap: balance; font-weight: 500; }
+.wash {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 50% at 80% -10%, rgba(143,168,184,0.16), transparent 58%);
+}
+.app {
+  position: relative;
+  max-width: 72rem;
+  margin: 0 auto;
+  min-height: 100dvh;
+  padding: 1.25rem 1rem 2rem;
+  display: flex;
+  flex-direction: column;
+}
+@media (min-width: 640px) { .app { padding: 1.25rem 1.5rem 2rem; } }
+@media (min-width: 1024px) { .app { padding: 1.25rem 2rem 2rem; } }
+header.top {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1.25rem;
+}
+@media (min-width: 640px) {
+  header.top { flex-direction: row; align-items: flex-end; justify-content: space-between; }
+}
+.kicker {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+h1 {
+  margin: 0.25rem 0 0;
+  font-family: var(--display);
+  font-size: clamp(2rem, 4vw, 3rem);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.lede { margin: 0.35rem 0 0; max-width: 36rem; font-size: 0.9rem; color: var(--muted); }
+.clock { display: flex; align-items: baseline; gap: 1rem; font-variant-numeric: tabular-nums; }
+.clock .date { font-size: 0.9rem; color: var(--muted); }
+.clock .time { font-family: var(--display); font-size: 1.5rem; letter-spacing: -0.02em; }
+.layout {
+  margin-top: 1.5rem;
+  display: grid;
+  gap: 1.5rem;
+  flex: 1;
+  min-width: 0;
+}
+@media (min-width: 1024px) { .layout { grid-template-columns: 1fr 3fr; } }
+nav.ops { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+@media (min-width: 1024px) { nav.ops { flex-direction: column; flex-wrap: nowrap; } }
+nav.ops button {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  height: 3rem;
+  padding: 0 0.85rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: left;
+  transition: background-color 150ms, color 150ms;
+}
+@media (min-width: 1024px) { nav.ops button { width: 100%; } }
+nav.ops button:hover { background: var(--surface-2); }
+nav.ops button.on { background: var(--fg); color: var(--bg); }
+nav.ops svg { width: 16px; height: 16px; flex-shrink: 0; }
+nav.ops .full { display: none; }
+@media (min-width: 1024px) {
+  nav.ops .full { display: inline; }
+  nav.ops .short { display: none; }
+}
+.side-extra { display: none; }
+@media (min-width: 1024px) {
+  .side-extra { display: flex; flex-direction: column; gap: 0.75rem; }
+}
+main.sheet {
+  min-width: 0;
+  border-radius: 1rem;
+  background: var(--surface);
+  padding: 1.25rem;
+}
+@media (min-width: 640px) { main.sheet { padding: 1.75rem; } }
+.mobile-extra { margin-top: 1.25rem; }
+@media (min-width: 1024px) { .mobile-extra { display: none; } }
+.card {
+  border-radius: 1rem;
+  background: var(--surface);
+  padding: 1rem;
+}
+.card-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.75rem;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.ghost:hover { background: rgba(238,241,244,0.08); }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: var(--radius);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--fg);
+  background: var(--surface-2);
+  transition: background-color 150ms, color 150ms, transform 150ms;
+}
+.btn:hover { background: rgba(238,241,244,0.1); }
+.btn:active:not(:disabled) { transform: scale(0.96); }
+.btn.primary { background: var(--fg); color: var(--bg); }
+.btn.primary:hover { background: rgba(238,241,244,0.9); }
+.btn.outline {
+  background: transparent;
+  box-shadow: 0 0 0 1px rgba(238,241,244,0.12);
+}
+.btn.warn { color: var(--warn); }
+.btn:disabled { opacity: 0.45; }
+.btn.wide { width: 100%; }
+@media (min-width: 640px) { .btn.wide { width: auto; } }
+.icon-btn {
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--fg);
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.icon-btn:hover { background: rgba(238,241,244,0.1); }
+.icon-btn:disabled { opacity: 0.4; }
+input[type="text"], input[type="number"], input[type="url"] {
+  width: 100%;
+  height: 2.75rem;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--gauge);
+  color: var(--gauge-fg);
+  font: inherit;
+  padding: 0 0.75rem;
+  outline: none;
+  box-shadow: 0 0 0 1px rgba(238,241,244,0.08);
+}
+input[type="number"] { appearance: textfield; font-variant-numeric: tabular-nums; }
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
+input:focus-visible { box-shadow: 0 0 0 1px rgba(143,168,184,0.7); }
+a.ext {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.75rem;
+  width: 100%;
+  margin-top: 0.75rem;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--fg);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+a.ext:hover { background: rgba(238,241,244,0.1); }
+.panel { display: flex; flex-direction: column; gap: 1.5rem; }
+.panel h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+}
+.panel .hint { margin: 0.25rem 0 0; font-size: 0.9rem; color: var(--muted); }
+.readout {
+  border-radius: 1rem;
+  background: var(--gauge);
+  color: var(--gauge-fg);
+  text-align: center;
+  padding: 1.25rem;
+}
+.readout .cap {
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(18,24,32,0.55);
+}
+.readout .val {
+  font-family: var(--display);
+  font-size: clamp(2.4rem, 6vw, 3.1rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.readout .unit {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(18,24,32,0.6);
+}
+.grid-2 { display: grid; gap: 1.5rem; }
+@media (min-width: 640px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+.actions { display: flex; flex-direction: column; gap: 0.5rem; }
+@media (min-width: 640px) { .actions { flex-direction: row; flex-wrap: wrap; } }
+.stepper { display: flex; flex-direction: column; gap: 0.75rem; }
+.stepper.dim, .dim { opacity: 0.45; pointer-events: none; }
+.stepper-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.stepper-head .u { color: var(--subtle); text-transform: none; letter-spacing: 0; }
+.stepper-row { display: flex; align-items: center; gap: 0.5rem; }
+.stepper-row input[type="number"] {
+  flex: 1;
+  height: 3rem;
+  text-align: center;
+  font-family: var(--display);
+  font-size: 1.5rem;
+}
+input[type="range"] {
+  width: 100%;
+  height: 0.75rem;
+  appearance: none;
+  background: var(--border);
+  border-radius: 999px;
+  outline: none;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface, #fff);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+  cursor: grab;
+}
+input[type="range"]::-webkit-slider-thumb:active {
+  cursor: grabbing;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface, #fff);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+  cursor: grab;
+}
+.bar-row { display: flex; align-items: center; gap: 0.75rem; }
+.bar-row input {
+  width: 9rem;
+  height: 3.5rem;
+  text-align: center;
+  font-family: var(--display);
+  font-size: 1.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.compass { display: flex; flex-direction: column; gap: 0.75rem; }
+.compass-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 3.5rem);
+  grid-template-rows: repeat(3, 3.5rem);
+  place-items: center;
+  align-self: center;
+}
+.compass-grid button {
+  width: 3.5rem;
+  height: 3.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.compass-grid button:hover { background: rgba(238,241,244,0.1); }
+.compass-grid button.on { background: var(--fg); color: var(--bg); }
+.compass-grid .hub {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  background: rgba(42,51,64,0.6);
+  display: grid;
+  place-items: center;
+}
+.compass-grid .hub span {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: var(--accent);
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip {
+  height: 2.75rem;
+  min-width: 5rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.chip:hover { background: rgba(238,241,244,0.1); }
+.chip.on { background: var(--fg); color: var(--bg); }
+.report {
+  margin: 0;
+  overflow-x: auto;
+  border-radius: 1rem;
+  background: var(--surface-2);
+  padding: 1.25rem;
+  font-family: var(--font);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.sultry {
+  border-radius: var(--radius);
+  background: rgba(196,165,116,0.15);
+  color: var(--warn);
+  text-align: center;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.chirps {
+  border-radius: 1rem;
+  background: var(--surface-2);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+@media (min-width: 640px) {
+  .chirps { flex-direction: row; align-items: flex-end; justify-content: space-between; }
+}
+.chirps .n {
+  font-family: var(--display);
+  font-size: 2.4rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-top: 0.25rem;
+}
+.clear {
+  min-height: 20rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2.5rem 0;
+}
+.clear h2 {
+  margin: 0;
+  max-width: 32rem;
+  font-family: var(--display);
+  font-size: clamp(1.7rem, 4vw, 2.25rem);
+  letter-spacing: -0.02em;
+}
+.clear p { margin: 0; max-width: 32rem; font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
+footer.legal {
+  margin-top: 1.5rem;
+  font-size: 0.75rem;
+  color: var(--subtle);
+  line-height: 1.6;
+}
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(14,18,24,0.7);
+  display: none;
+}
+.overlay.show { display: block; }
+.modal {
+  position: fixed;
+  z-index: 50;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(32rem, calc(100vw - 1.5rem));
+  max-height: min(80vh, 40rem);
+  overflow: auto;
+  border-radius: 1rem;
+  background: var(--surface);
+  color: var(--fg);
+  padding: 1.5rem;
+  box-shadow: 0 0 0 1px rgba(238,241,244,0.08);
+  display: none;
+}
+.modal.show { display: block; }
+.modal h3 {
+  margin: 0 2.5rem 0 0;
+  font-family: var(--display);
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+.modal pre {
+  margin: 0.75rem 0 0;
+  white-space: pre-wrap;
+  font-family: var(--font);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.modal .close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.4rem;
+}
+.modal .close:hover { background: rgba(238,241,244,0.08); color: var(--fg); }
+.hidden { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wash"></div>
+<div class="app">
+  <header class="top">
+    <div>
+      <p class="kicker">PANDA Group · 1986–2026</p>
+      <h1>Weather 11</h1>
+      <p class="lede">Calculations, conversions, and wind-barometer forecasting — the sailor’s almanac desk.</p>
+      <button type="button" class="btn primary" id="savePage" style="margin-top:1rem">Download Weather11.html</button>
+    </div>
+    <div class="clock">
+      <span class="date" id="dateLabel"></span>
+      <span class="time" id="timeLabel"></span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside>
+      <nav class="ops" aria-label="Operations" id="nav"></nav>
+      <div class="side-extra" id="sideExtra"></div>
+    </aside>
+    <main class="sheet" id="main"></main>
+  </div>
+
+  <section class="mobile-extra" id="mobileExtra"></section>
+  <footer class="legal">Weather 11.0 — Copyright Phil Baughn (PANDA Group, LLC) — 1986–2026 · Standalone HTML — open this file in any browser or upload it to a static host.</footer>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <button class="close" type="button" id="modalClose" aria-label="Close">×</button>
+  <h3 id="modalTitle"></h3>
+  <pre id="modalBody"></pre>
+</div>
+
+<noscript>
+  <p style="padding:2rem;color:#eef1f4;font-family:system-ui">Weather 11 needs JavaScript to run its calculators.</p>
+</noscript>
+
+<script>
+(function () {
+  "use strict";
+
+  var DIRS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  var DEFAULT_WLINK = "http://www.wunderground.com";
+  var WLINK_KEY = "weather11.wlink";
+  var DEFAULTS = {
+    barometer: 30,
+    dewTemp: 72, dewHum: 50,
+    wcTemp: 45, wcWind: 10,
+    thiTemp: 72, thiHum: 85,
+    hiTemp: 80, hiHum: 80,
+    freezeF: 32, boilF: 212
+  };
+
+  var POSSIBLE_FORECASTS = [
+    "NO IMMEDIATE CHANGE IS FORECAST",
+    "WIND INCREASING; RAIN WITHIN 12 HOURS",
+    "CLEARING AND COLDER",
+    "CLEARING WITHIN A FEW HOURS/FAIR FOR SEVERAL DAYS",
+    "RAIN WITHIN 24 HOURS",
+    "WIND INCREASING; RAIN WITHIN 24 HOURS",
+    "SEVERE STORM IMMIMENT, FOLLOWED WITHIN 24 HOURS BY CLEARING. IN WINTER, COLDER TEMPERATURES.",
+    "RAIN WITHIN 12 TO 18 HOURS",
+    "RAIN WILL CONTINUE FOR 1 TO 2 DAYS",
+    "RAIN, WITH HIGH WIND, FOLLOWED WITHIN 36 HOURS BY CLEARING. IN WINTER - COLDER TEMPERATURES.",
+    "SUMMER - LIGHT WINDS; RAIN MAY NOT FALL FOR SEVERAL DAYS.  WINTER - RAIN WITHIN 24 HOURS",
+    "SUMMER RAIN PROBABLE 12/24 HOURS.  WINTER RAIN OR SNOW, INCREASING WIND; BAD WEATHER OFTEN SETS IN WHEN BAROMETER BEGINS TO FALL AND WINDS SET IN FROM THE NORTHEAST.",
+    "SEVERE NORTHEAST GALE AND HEAVY PRECIPITATION, IN WINTER - HEAVY SNOW FOLLOWED BY A COLD WAVE",
+    "CONTINUED FAIR WEATHER WITH NO DECIDED TEMPERATURE CHANGE",
+    "FAIR, FOLLOWED WITHIN 2 DAYS BY RAIN",
+    "FAIR FOR 2 DAYS WITH SLOWLY RISING TEMPERATURES"
+  ];
+
+  var WBF_STEPS = [
+    "Step 1 -- Enter the current barometric pressure (Upper Left)",
+    "Step 2 -- Select the current wind direction (Center Left)",
+    "Step 3 -- Select the most previous wind direction (Lower Left)",
+    "Step 4 -- Enter the barometric trend and rate of change (Lower Center)"
+  ].join("\n\n");
+
+  var COPY = {
+    ABOUT_TITLE: "About Weather 11",
+    ABOUT_BODY: "Weather, version 11\nCalculations, Conversions, and\nWind/Barometer Forecasting.\n\n1st released - 1986\n\nCurrent release: Weather 11 standalone HTML\nFaithful port of Weather 11 for .NET 10 (Windows)\nModernized from .NET Framework 3.5 / Visual Studio 2008\n\nPhil Baughn - PANDA Group, LLC\nhttp://weather.Baughn.net",
+    ABOUT_WBF_TITLE: "About Wind-Barometer Forecasting",
+    ABOUT_WBF_BODY: "This program will provide you with a very good forcast providing\nyou supply the correct information as to barometric pressure and\nwind direction.  This method has been used for ages by sailors &\nthe tables themselves can still be found in almost all editions\nof The Farmers Almanac.",
+    POSSIBLE_TITLE: "Possible Forecasts",
+    DP_ALERT_TITLE: "Dew Point Reference Notes",
+    DP_ALERT_BODY: "When the Dew Point is within 2 degrees\nof the Temperature, fog is possible with\na wind in excess of 4 or 5 MPH.  The closer\nthe gap, the greater the possibility or\ndenseness of fog",
+    WC_ALERT_TITLE: "Wind Chill Reference Notes",
+    THI_ALERT_TITLE: "THI Reference Notes",
+    HI_ALERT_TITLE: "Heat Index Reference Notes",
+    CRICKET_TITLE: "Cricket Chirps",
+    BAROMETER_NOTICE: "Requires a numeric entry.",
+    BAROMETER_NOTICE_TITLE: "Barometer Entry Notice",
+    CLEAR_PROMPT: "Select an operation to perform from the left.",
+    WBF_PROMPT_START: "Enter the current barometric pressure, then select the current and previous wind direction on the left.",
+    WBF_PROMPT_PREV: "Now select the Previous Wind Direction below left.",
+    WBF_PROMPT_TREND: "Enter the current barometric trend to the right.",
+    WBF_PROMPT_RATE: "Now select the Barometric Rate of Change to the right.",
+    WBF_PROMPT_CALC: "Now press the calculate button.",
+    WBF_PROMPT_AGAIN: "Select the current wind direction on your left."
+  };
+
+  function footerForecast(headline, cbp, cwd, pwd, trend, ratehold) {
+    return headline + "\n\nForecast Conditions for the forecast above were...\n\n" +
+      "Barometer:  " + String(cbp) + "\n" +
+      "Wind Direction:  " + cwd + "\n" +
+      "Previous Wind From:  " + pwd + "\n" +
+      "Barometric Trend:  " + trend + "\n" +
+      "Change Rate:  " + ratehold;
+  }
+
+  function windBarometerForecast(cbp, cwd, pwd, trend, ratehold) {
+    function say(headline) { return footerForecast(headline, cbp, cwd, pwd, trend, ratehold); }
+    function noChange() { return say("NO IMMEDIATE CHANGE IS FORECAST"); }
+    var pwds = cwd;
+    if (cwd === "SW") {
+      if (pwd === "S") pwds = "M";
+      else if (pwd === "NW") pwds = "N";
+      else pwds = "O";
+    } else if (cwd === "SE") {
+      if (pwd === "NE") pwds = "P";
+      else if (pwd === "S") pwds = "Q";
+      else pwds = "R";
+    } else if (cwd === "S" || cwd === "N" || cwd === "NW" || cwd === "NE") {
+      return noChange();
+    } else if (cwd === "E") {
+      pwds = "S";
+    } else if (cwd === "W") {
+      pwds = "T";
+    }
+    var rateCode = ratehold === "R" ? "R" : "S";
+    var bms;
+    if (cbp > 30.01) {
+      if (trend === "F") bms = rateCode === "R" ? "C4" : "C3";
+      else if (trend === "S") bms = "C1";
+      else bms = "C2";
+    } else if (cbp < 29.81) {
+      var t = trend === "S" ? "F" : trend;
+      bms = t === "R" ? "C8" : "C9";
+    } else if (trend === "F") {
+      bms = rateCode === "R" ? "C6" : "C5";
+    } else if (trend === "R") {
+      bms = "C7";
+    } else {
+      bms = "C0";
+    }
+    if (pwds === "O" || pwds === "R") return noChange();
+    var key = pwds + "+" + bms;
+    var table = {
+      "T+C8": "CLEARING AND COLDER",
+      "M+C7": "CLEARING WITHIN A FEW HOURS/FAIR FOR SEVERAL DAYS",
+      "N+C7": "CLEARING WITHIN A FEW HOURS/FAIR FOR SEVERAL DAYS",
+      "Q+C3": "RAIN WITHIN 24 HOURS",
+      "Q+C4": "WIND INCREASING; RAIN WITHIN 24 HOURS",
+      "Q+C9": "SEVERE STORM IMMIMENT, FOLLOWED WITHIN 24 HOURS BY CLEARING. IN WINTER, COLDER TEMPERATURES.",
+      "P+C9": "SEVERE STORM IMMIMENT, FOLLOWED WITHIN 24 HOURS BY CLEARING. IN WINTER, COLDER TEMPERATURES.",
+      "P+C3": "RAIN WITHIN 12 TO 18 HOURS",
+      "P+C4": "RAIN WILL CONTINUE FOR 1 TO 2 DAYS",
+      "P+C5": "RAIN WILL CONTINUE FOR 1 TO 2 DAYS",
+      "P+C6": "RAIN, WITH HIGH WIND, FOLLOWED WITHIN 36 HOURS BY CLEARING. IN WINTER - COLDER TEMPERATURES.",
+      "S+C3": "SUMMER - LIGHT WINDS; RAIN MAY NOT FALL FOR SEVERAL DAYS.  WINTER - RAIN WITHIN 24 HOURS",
+      "S+C4": "SUMMER RAIN PROBABLE 12/24 HOURS.  WINTER RAIN OR SNOW, INCREASING WIND; BAD WEATHER OFTEN SETS IN WHEN BAROMETER BEGINS TO FALL AND WINDS SET IN FROM THE NORTHEAST.",
+      "S+C9": "SEVERE NORTHEAST GALE AND HEAVY PRECIPITATION, IN WINTER - HEAVY SNOW FOLLOWED BY A COLD WAVE",
+      "N+C1": "CONTINUED FAIR WEATHER WITH NO DECIDED TEMPERATURE CHANGE",
+      "N+C2": "FAIR, FOLLOWED WITHIN 2 DAYS BY RAIN",
+      "N+C3": "FAIR FOR 2 DAYS WITH SLOWLY RISING TEMPERATURES"
+    };
+    return say(table[key] || "WIND INCREASING; RAIN WITHIN 12 HOURS");
+  }
+
+  function dewPointF(tempF, humidity) {
+    var T = ((tempF - 32) * 5) / 9;
+    var X = 1 - 0.01 * humidity;
+    var TD = T - (14.55 + 0.114 * T) * X - Math.pow((2.5 + 0.007 * T) * X, 3) - (15.9 + 0.117 * T) * Math.pow(X, 14);
+    return (TD * 9) / 5 + 32;
+  }
+  function dewPointFogLikely(tempF, dewF) { return tempF - dewF <= 2; }
+  function windChillF(tempF, windMph) {
+    var V = windMph <= 4 ? 4 : windMph;
+    V = (V * 1609.35) / 3600;
+    var TC = 33 - (tempF - 32) * (5 / 9);
+    var H = (10.45 + Math.sqrt(V) * 10 - V) * TC;
+    var X = H - 506.784;
+    if (X < 0) return tempF;
+    var X1 = 50 - X / 12.3;
+    return (X1 * 10 + 5) / 10;
+  }
+  function windChillAlert(wc) { return wc < 32.01; }
+  function thi(tempF, humidity) {
+    var T = tempF, H = humidity, A = 0;
+    if (H > 94) A = 0.195 * T - 15;
+    else if (H > 89 && H < 95) A = 0.18 * T - 15;
+    if (H > 79 && H < 90) A = 0.1667 * T - 15;
+    else if (H > 69 && H < 80) A = 0.145 * T - 15;
+    if (H > 59 && H < 70) A = 0.1233 * T - 15;
+    else if (H < 60) A = 0.085 * T - 15;
+    return 0.8 * T + 15 + A;
+  }
+  function thiAlert(value) { return value > 70; }
+  function heatIndex(tempF, rh) {
+    var TA = tempF;
+    var TC = ((TA - 32) * 5) / 9;
+    var ES = 6.11 * Math.pow(10, (7.567 * TC) / (239.7 + TC));
+    var EN = 0.01 * rh * ES;
+    var TB = 37, PB = 5.65, Q = 180;
+    var RS = 0.0387, ZS = 0.0521;
+    var EHC = 17.4, PHI2 = 0.84, R = 0.124, CHC = 11.6;
+    var PINF = 0.1 * EN;
+    var HER = 4.18 + 0.036 * TC;
+    var ERA = 1 / (EHC + HER);
+    var QV = Q * (0.143 - 0.00112 * TC - 0.0168 * PINF);
+    var EZA = 0.060606 / EHC;
+    var HR = 3.35 + 0.049 * TC;
+    var ARA = 1 / (CHC + HR);
+    var AZA = 0.060606 / CHC;
+    var Q2U = (TB - TC + ((PB - PINF) * ERA) / (ZS + EZA)) / (RS + ERA);
+    var QJ = (Q - QV - (1 - PHI2) * Q2U) / PHI2;
+    var K = RS + ARA + (ZS + AZA) / R - (TB - TC + (PB - PINF) / R) / QJ;
+    var L = (RS + ARA) * (ZS + AZA);
+    L = (L - ((TB - TC) * (ZS + AZA) + (PB - PINF) * ARA) / QJ) / R;
+    var disc = K * K - 4 * L;
+    var DF = 0, APPTEMP = 0;
+    if (disc < 0) DF = -1;
+    else DF = 60 * (0.5 * (-K + Math.sqrt(disc)));
+    if (DF < 0) {
+      var HC = 12.3;
+      HR = 4.1 + 0.028 * TC;
+      var RA = 1 / (HC + HR);
+      var ZA = 0.060606 / HC;
+      var QU = Q - QV;
+      for (var it = 1; it <= 10; it++) {
+        ZS = ((PB - PINF) * RA) / (QU * (RS + RA) - (TB - TC)) - ZA;
+        if (ZS < 0) ZS = 0;
+        var R3 = Math.pow(ZS / 600000, 0.2);
+        if (Math.abs(RS - R3) <= 0.0001) break;
+        RS = 0.5 * (RS + R3);
+      }
+      var N1 = 159.0984, N2 = 37, N3 = (4.05 * RA) / (ZS + ZA), N4 = RS + RA, N5 = 0.2016;
+      APPTEMP = (-N1 + (N2 + N3) / N4) / (N5 + 1 / N4);
+    } else {
+      var RF = 0.5 * (-K + Math.sqrt(disc));
+      var W1 = 0.2016, W2 = (1 - PHI2) / (RS + ERA), W3 = PHI2 / (RS + RF + ARA);
+      var W4 = 159.0984, W5 = 37, W6 = (4.05 * ERA) / (ZS + EZA);
+      var W7 = (4.05 * (RF + ARA)) / (ZS + R * RF + AZA);
+      APPTEMP = (-W4 + W2 * (W5 + W6) + W3 * (W5 + W7)) / (W1 + W2 + W3);
+    }
+    APPTEMP = 32 + 1.8 * APPTEMP;
+    return { value: APPTEMP, severeSultriness: DF < 0 };
+  }
+  function heatIndexAlert(value) { return value > 89.999; }
+  function cricketChirps(tempF) { return tempF < 40 ? 0 : tempF - 40; }
+  function fromFahrenheit(f) {
+    var c = (5 * (f - 32)) / 9;
+    var k = c + 273.15;
+    return { f: f, c: c, k: k, r: k * 1.8 };
+  }
+  function fromCelsius(c) { return fromFahrenheit(32 + (9 / 5) * c); }
+  function fmt2(n) {
+    if (!isFinite(n)) return "—";
+    var abs = Math.abs(n);
+    var body = abs.toFixed(2);
+    if (n < 0) return abs < 10 ? "-" + body.padStart(5, "0") : "-" + body;
+    return abs < 10 ? body.padStart(5, "0") : body;
+  }
+  function fmtWide(n) { return isFinite(n) ? n.toFixed(2) : "—"; }
+  function fmtChirps(n, tenths) { return !isFinite(n) ? "0" : tenths ? n.toFixed(1) : String(Math.round(n)); }
+  function clamp(n, min, max) { return !isFinite(n) ? min : Math.min(max, Math.max(min, n)); }
+  function normalizeWeatherUrl(raw) {
+    var t = String(raw || "").trim();
+    if (!t) return DEFAULT_WLINK;
+    if (/^[a-z][a-z0-9+.-]*:/i.test(t)) return t;
+    return "https://" + t;
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      if (c === "&") return "\u0026amp;";
+      if (c === "<") return "\u0026lt;";
+      if (c === ">") return "\u0026gt;";
+      if (c === '"') return "\u0026quot;";
+      return "\u0026#39;";
+    });
+  }
+  function wcAlertBody(reading, temp) {
+    return "Your Wind Chill reading is " + reading + ".\n\nEven at the current temperature, " + temp + ",\nthe same effects as freezing temperatures\ncan be expected -- bundle up.";
+  }
+  function thiAlertBody(reading) {
+    return "Your Temperature-Humidity Index reading was " + reading + ".\n\nReadings in excess of 70 represent the point where a few people\nbegin to feel uncomfortable. Over 75, about 1/2 of all people\nwill feel uncomfortable. Nearly all people will feel uncomfortable\nwith readings over 79 with rapidly decreasing work efficiency\nbeginning with levels in excess of 84; and EXTREME DANGER with the\npossibility of heat exhaustion and heat stroke begin with levels\nof 92 and higher.\n\nThe THI number, used to express the combined temperature-humidity\neffect provides a fairly good index of equivalent heat stress. In\nengineering, this combined index is referred to as 'effective temperature'.\nThe weather bureau has also been known to refer to it as\nthe Discomfort Index. It is NOT the same as the 'Heat Index' even\nthough they both help to compute Apparent Temperatures.";
+  }
+  function hiAlertBody(reading) {
+    return "Your Present Calculated Heat Index Value Is " + reading + ".\n\nWhen the Heat Index reaches 130 degrees or higher, Heat\nStrokes or Sunstrokes are HIGHLY likely with continued\nexposure!  When the Heat Index ranges from 105 to 130\ndegrees, sunstroke, heat exhaustion and heat cramps are\nlikely with prolonged exposure and/or physical activity.\nHeat Index ranges between 90 and 105 degrees indicate a\npossibility of heat cramps and heat exhaustion with\nprolonged exposure and/or physical activity.\n\nProgram calculations assume an adult, wearing long pants\nand a short sleeved shirt, walking in shade at 3.1 MPH\nwith standard sea level air pressure, a wind speed of\n5.6 MPH, and a vapor pressure of 1.6kPa.  In effect, the\ncalculations approximate the temperature that current\nconditions feel like to the average person.";
+  }
+  function cricketBody(tempF, chirps) {
+    return "Cricket chirps per 15 seconds are estimated from Fahrenheit:\n\n  Chirps = °F − 40   (or 0 if below 40°F)\n\nCurrent Fahrenheit: " + tempF.toFixed(1) + " °F\nExpected chirps (15 sec): " + chirps.toFixed(1);
+  }
+
+  if (fmt2(dewPointF(72, 50)) !== "52.41") console.warn("dew point mismatch");
+  if (fmt2(windChillF(45, 10)) !== "34.86") console.warn("wind chill mismatch");
+  if (fmt2(thi(72, 85)) !== "69.60") console.warn("thi mismatch");
+  if (fmt2(heatIndex(80, 80).value) !== "84.44") console.warn("heat index mismatch");
+
+  var ICONS = {
+    clear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+    forecast: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
+    dew: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22a7 7 0 0 0 7-7c0-4-7-11-7-11S5 11 5 15a7 7 0 0 0 7 7z"/></svg>',
+    chill: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg>',
+    thi: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>',
+    heat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>',
+    convert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>'
+  };
+
+  var NAV = [
+    { id: "clear", label: "Clear Workspace", short: "Clear" },
+    { id: "forecast", label: "Wind-Barometer Forecasting", short: "Forecast" },
+    { id: "dew", label: "Dew Point Calculation", short: "Dew Point" },
+    { id: "chill", label: "Wind Chill Calculation", short: "Wind Chill" },
+    { id: "thi", label: "Temperature Humidity Index", short: "THI" },
+    { id: "heat", label: "Heat Index Calculation", short: "Heat Index" },
+    { id: "convert", label: "Fahrenheit/Celcius Conversion", short: "Convert" }
+  ];
+
+  var savedLink = DEFAULT_WLINK;
+  try {
+    var stored = localStorage.getItem(WLINK_KEY);
+    if (stored) savedLink = stored;
+  } catch (e) { /* ignore */ }
+
+  var state = {
+    workspace: "clear",
+    wlink: savedLink,
+    dew: { temp: DEFAULTS.dewTemp, hum: DEFAULTS.dewHum },
+    chill: { temp: DEFAULTS.wcTemp, wind: DEFAULTS.wcWind },
+    thi: { temp: DEFAULTS.thiTemp, hum: DEFAULTS.thiHum },
+    heat: { temp: DEFAULTS.hiTemp, hum: DEFAULTS.hiHum },
+    conv: { source: "F", tenths: false, f: DEFAULTS.freezeF },
+    wbf: {
+      barRaw: "30.00",
+      cwd: null, pwd: null, trend: null, rate: null,
+      lock: "cwd",
+      prompt: COPY.WBF_PROMPT_START,
+      report: WBF_STEPS
+    }
+  };
+
+  var main = document.getElementById("main");
+  var navEl = document.getElementById("nav");
+  var overlay = document.getElementById("overlay");
+  var modal = document.getElementById("modal");
+
+  function notice(title, body) {
+    document.getElementById("modalTitle").textContent = title;
+    document.getElementById("modalBody").textContent = body;
+    overlay.classList.add("show");
+    modal.classList.add("show");
+  }
+  function closeModal() {
+    overlay.classList.remove("show");
+    modal.classList.remove("show");
+  }
+  document.getElementById("modalClose").addEventListener("click", closeModal);
+  overlay.addEventListener("click", closeModal);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeModal();
+  });
+
+  function persistLink(next) {
+    state.wlink = next;
+    try { localStorage.setItem(WLINK_KEY, next); } catch (e) { /* ignore */ }
+  }
+
+  function linkCardHtml() {
+    return '<section class="card">' +
+      '<div class="card-kicker">On-line weather link</div>' +
+      '<input type="url" class="wlink-input" aria-label="Weather link address" value="' + esc(state.wlink) + '" />' +
+      '<a class="ext" href="' + esc(normalizeWeatherUrl(state.wlink)) + '" target="_blank" rel="noreferrer">Open External Weather Link</a>' +
+      "</section>";
+  }
+
+  function helpButtons() {
+    return '<div style="display:flex;flex-direction:column;gap:0.25rem">' +
+      '<button type="button" class="ghost" data-help="about">About Weather 11</button>' +
+      '<button type="button" class="ghost" data-help="wbf">About Wind-Barometer Forecasting</button>' +
+      '<button type="button" class="ghost" data-help="possible">View All Possible Forecasts</button>' +
+      "</div>";
+  }
+
+  function renderNav() {
+    navEl.innerHTML = NAV.map(function (item) {
+      return '<button type="button" data-go="' + item.id + '" class="' + (state.workspace === item.id ? "on" : "") + '">' +
+        ICONS[item.id] +
+        '<span class="short">' + esc(item.short) + "</span>" +
+        '<span class="full">' + esc(item.label) + "</span></button>";
+    }).join("");
+  }
+
+  function renderChrome() {
+    document.getElementById("sideExtra").innerHTML = linkCardHtml() + helpButtons();
+    document.getElementById("mobileExtra").innerHTML = linkCardHtml() + '<div style="margin-top:0.75rem">' + helpButtons() + "</div>";
+    bindLinkInputs();
+  }
+
+  function bindLinkInputs() {
+    document.querySelectorAll(".wlink-input").forEach(function (input) {
+      input.addEventListener("input", function () {
+        persistLink(input.value);
+        var href = normalizeWeatherUrl(state.wlink);
+        document.querySelectorAll("a.ext").forEach(function (a) { a.href = href; });
+        document.querySelectorAll(".wlink-input").forEach(function (el) {
+          if (el !== input) el.value = state.wlink;
+        });
+      });
+    });
+  }
+
+  function stepperHtml(path, label, unit, min, max, step, decimals) {
+    return '<div class="stepper" data-stepper="' + path + '" data-min="' + min + '" data-max="' + max + '" data-step="' + step + '" data-decimals="' + decimals + '">' +
+      '<div class="stepper-head"><span>' + esc(label) + '</span><span class="u">' + esc(unit) + "</span></div>" +
+      '<div class="stepper-row">' +
+      '<button type="button" class="icon-btn" data-bump="-1" aria-label="Decrease ' + esc(label) + '">−</button>' +
+      '<input type="number" data-path="' + path + '" inputmode="decimal" min="' + min + '" max="' + max + '" step="' + step + '" aria-label="' + esc(label) + '" />' +
+      '<button type="button" class="icon-btn" data-bump="1" aria-label="Increase ' + esc(label) + '">+</button>' +
+      "</div>" +
+      '<input type="range" data-path="' + path + '" min="' + min + '" max="' + max + '" step="' + step + '" aria-label="' + esc(label) + ' slider" />' +
+      "</div>";
+  }
+
+  function readoutHtml(id, caption, unit) {
+    return '<div class="readout"><div class="cap">' + esc(caption) + '</div><div class="val" id="' + id + '"></div><div class="unit">' + esc(unit) + "</div></div>";
+  }
+
+  function compassHtml(which, label) {
+    var cells = { NW: [1,1], N:[2,1], NE:[3,1], W:[1,2], E:[3,2], SW:[1,3], S:[2,3], SE:[3,3] };
+    var buttons = DIRS.map(function (d) {
+      var c = cells[d];
+      return '<button type="button" data-dir="' + d + '" data-compass="' + which + '" style="grid-column:' + c[0] + ";grid-row:" + c[1] + '" aria-label="' + d + '">' + d + "</button>";
+    }).join("");
+    return '<div class="compass" id="compass-' + which + '"><div class="label">' + esc(label) + "</div>" +
+      '<div class="compass-grid">' + buttons + '<div class="hub" style="grid-column:2;grid-row:2"><span></span></div></div></div>';
+  }
+
+  function templates() {
+    return {
+      clear: '<div class="clear"><p class="kicker">Clear slate</p><h2>' + esc(COPY.CLEAR_PROMPT) + "</h2>" +
+        "<p>Wind and barometer tables from the Farmer’s Almanac, plus dew point, wind chill, discomfort index, heat index, and temperature conversion — the same desk Phil Baughn first shipped in 1986.</p>" +
+        "<p>This page is a single HTML file. Upload it to any static host, or open it directly from disk — no server required.</p></div>",
+      dew: '<div class="panel"><h2>Dew Point</h2>' + readoutHtml("out-dew", "Current dew point", "°F") +
+        '<div class="grid-2">' + stepperHtml("dew.temp", "Temperature", "°F", -100, 200, 1, 0) +
+        stepperHtml("dew.hum", "Relative humidity", "%", 0, 100, 1, 0) + "</div>" +
+        '<div class="actions"><button type="button" class="btn" data-reset="dew">Reset the Form</button>' +
+        '<button type="button" class="btn outline warn hidden" id="alert-dew">Alert — View Dew Point Reference Notes</button></div></div>',
+      chill: '<div class="panel"><h2>Wind Chill</h2>' + readoutHtml("out-chill", "Current wind chill", "°F") +
+        '<div class="grid-2">' + stepperHtml("chill.temp", "Temperature", "°F", -100, 200, 1, 0) +
+        stepperHtml("chill.wind", "Wind speed", "mph", 0, 100, 1, 0) + "</div>" +
+        '<div class="actions"><button type="button" class="btn" data-reset="chill">Reset the Form</button>' +
+        '<button type="button" class="btn outline warn hidden" id="alert-chill">Alert — View Wind Chill Reference Notes</button></div></div>',
+      thi: '<div class="panel"><h2>Temperature Humidity Index</h2>' + readoutHtml("out-thi", "Current THI", "THI") +
+        '<div class="grid-2">' + stepperHtml("thi.temp", "Temperature", "°F", -100, 200, 1, 0) +
+        stepperHtml("thi.hum", "Relative humidity", "%", 0, 100, 1, 0) + "</div>" +
+        '<div class="actions"><button type="button" class="btn" data-reset="thi">Reset the Form</button>' +
+        '<button type="button" class="btn outline warn hidden" id="alert-thi">Alert — View THI Reference Notes</button></div></div>',
+      heat: '<div class="panel"><h2>Heat Index</h2>' + readoutHtml("out-heat", "Current heat index", "°F") +
+        '<div class="sultry hidden" id="sultry">Severe Sultriness…</div>' +
+        '<div class="grid-2">' + stepperHtml("heat.temp", "Temperature", "°F", -100, 200, 1, 0) +
+        stepperHtml("heat.hum", "Relative humidity", "%", 0, 100, 1, 0) + "</div>" +
+        '<div class="actions"><button type="button" class="btn" data-reset="heat">Reset the Form</button>' +
+        '<button type="button" class="btn outline warn hidden" id="alert-heat">Alert — View Heat Index Reference Notes</button></div></div>',
+      convert: '<div class="panel"><h2>Fahrenheit / Celsius Conversion</h2>' +
+        "<p class=\"hint\">Convert across Fahrenheit, Celsius, Kelvin, and Rankine. Cricket chirps follow Dolbear’s rule from the Fahrenheit reading.</p>" +
+        '<div class="chips"><button type="button" class="chip" data-source="F">Convert Fahrenheit to Celsius</button>' +
+        '<button type="button" class="chip" data-source="C">Convert Celsius to Fahrenheit</button></div>' +
+        '<div class="grid-2">' + stepperHtml("conv.f", "Fahrenheit", "°F", -100, 200, 1, 1) +
+        stepperHtml("conv.c", "Celsius", "°C", -73, 93, 1, 1) + "</div>" +
+        '<div class="grid-2">' + readoutHtml("out-k", "Kelvin", "K") + readoutHtml("out-r", "Rankine", "°R") + "</div>" +
+        '<div class="chirps"><div><div class="label">Chirps per 15 seconds</div><div class="n" id="out-chirps"></div></div>' +
+        '<button type="button" class="btn outline" id="btn-cricket">Cricket Chirps</button></div>' +
+        '<div class="actions"><button type="button" class="btn" data-reset="freeze">Reset to freezing point of H2O</button>' +
+        '<button type="button" class="btn" data-reset="boil">Reset to boiling point of H2O</button>' +
+        '<button type="button" class="btn outline" id="btn-tenths">Increment: ones</button></div></div>',
+      forecast: '<div class="panel"><header><h2>Wind-Barometer Forecasting</h2><p class="hint" id="wbf-prompt"></p></header>' +
+        '<div><label class="label" for="barometer">Current barometric pressure</label>' +
+        '<div class="bar-row"><input id="barometer" inputmode="decimal" /><span class="hint">inHg</span></div></div>' +
+        '<div class="grid-2">' + compassHtml("cwd", "Current wind direction") + compassHtml("pwd", "Previous wind direction") + "</div>" +
+        '<div class="grid-2"><div id="trend-box"><div class="label">Present trend</div><div class="chips">' +
+        '<button type="button" class="chip" data-trend="R">Rising</button>' +
+        '<button type="button" class="chip" data-trend="S">Steady</button>' +
+        '<button type="button" class="chip" data-trend="F">Falling</button></div></div>' +
+        '<div id="rate-box"><div class="label">Rate of change</div><div class="chips">' +
+        '<button type="button" class="chip" data-rate="R">Rapidly</button>' +
+        '<button type="button" class="chip" data-rate="S">Slowly</button>' +
+        '<button type="button" class="chip" data-rate="N/A" disabled>N/A</button></div></div></div>' +
+        '<button type="button" class="btn primary wide" id="btn-calc">Calculate Your Forecast / Start Over</button>' +
+        '<pre class="report" id="wbf-report"></pre></div>'
+    };
+  }
+
+  function getPath(path) {
+    return path.split(".").reduce(function (o, k) { return o[k]; }, state);
+  }
+  function setPath(path, v) {
+    var keys = path.split(".");
+    var last = keys.pop();
+    var o = state;
+    for (var i = 0; i < keys.length; i++) o = o[keys[i]];
+    o[last] = v;
+  }
+
+  function bindSteppers() {
+    main.querySelectorAll("[data-stepper]").forEach(function (root) {
+      var path = root.getAttribute("data-stepper");
+      var min = Number(root.getAttribute("data-min"));
+      var max = Number(root.getAttribute("data-max"));
+      var step = Number(root.getAttribute("data-step"));
+      var decimals = Number(root.getAttribute("data-decimals"));
+      root.querySelectorAll("[data-bump]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var dir = Number(btn.getAttribute("data-bump"));
+          var cur = path === "conv.c" ? fromFahrenheit(state.conv.f).c : getPath(path);
+          var next = clamp(Number((cur + dir * step).toFixed(decimals)), min, max);
+          applyNumeric(path, next);
+        });
+      });
+      root.querySelectorAll("[data-path]").forEach(function (el) {
+        el.addEventListener("input", function () {
+          var n = Number(el.value);
+          if (!isFinite(n)) return;
+          applyNumeric(path, clamp(n, min, max), el);
+        });
+      });
+    });
+  }
+
+  function applyNumeric(path, n, except) {
+    if (path === "conv.c") state.conv.f = fromCelsius(n).f;
+    else setPath(path, n);
+    syncPanel(except);
+  }
+
+  function writeStepper(path, value, except, decimals, disabled) {
+    main.querySelectorAll('[data-stepper="' + path + '"]').forEach(function (root) {
+      root.classList.toggle("dim", !!disabled);
+      root.querySelectorAll("[data-path]").forEach(function (el) {
+        if (el === except) return;
+        if (el.type === "number") el.value = Number(value).toFixed(decimals);
+        else el.value = String(value);
+      });
+      var min = Number(root.getAttribute("data-min"));
+      var max = Number(root.getAttribute("data-max"));
+      var btns = root.querySelectorAll("[data-bump]");
+      if (btns[0]) btns[0].disabled = !!disabled || value <= min;
+      if (btns[1]) btns[1].disabled = !!disabled || value >= max;
+    });
+  }
+
+  function syncPanel(except) {
+    var ws = state.workspace;
+    if (ws === "dew") {
+      var dp = dewPointF(state.dew.temp, state.dew.hum);
+      document.getElementById("out-dew").textContent = fmt2(dp);
+      writeStepper("dew.temp", state.dew.temp, except, 0);
+      writeStepper("dew.hum", state.dew.hum, except, 0);
+      document.getElementById("alert-dew").classList.toggle("hidden", !dewPointFogLikely(state.dew.temp, dp));
+    } else if (ws === "chill") {
+      var wc = windChillF(state.chill.temp, state.chill.wind);
+      document.getElementById("out-chill").textContent = fmt2(wc);
+      writeStepper("chill.temp", state.chill.temp, except, 0);
+      writeStepper("chill.wind", state.chill.wind, except, 0);
+      document.getElementById("alert-chill").classList.toggle("hidden", !windChillAlert(wc));
+    } else if (ws === "thi") {
+      var tv = thi(state.thi.temp, state.thi.hum);
+      document.getElementById("out-thi").textContent = fmt2(tv);
+      writeStepper("thi.temp", state.thi.temp, except, 0);
+      writeStepper("thi.hum", state.thi.hum, except, 0);
+      document.getElementById("alert-thi").classList.toggle("hidden", !thiAlert(tv));
+    } else if (ws === "heat") {
+      var hi = heatIndex(state.heat.temp, state.heat.hum);
+      document.getElementById("out-heat").textContent = fmt2(hi.value);
+      writeStepper("heat.temp", state.heat.temp, except, 0);
+      writeStepper("heat.hum", state.heat.hum, except, 0);
+      document.getElementById("sultry").classList.toggle("hidden", !hi.severeSultriness);
+      document.getElementById("alert-heat").classList.toggle("hidden", !heatIndexAlert(hi.value));
+    } else if (ws === "convert") {
+      var conv = fromFahrenheit(state.conv.f);
+      var step = state.conv.tenths ? 0.1 : 1;
+      var dec = 1;
+      main.querySelectorAll("[data-stepper]").forEach(function (root) {
+        root.setAttribute("data-step", String(step));
+        root.querySelectorAll("[data-path]").forEach(function (el) { el.step = String(step); });
+      });
+      writeStepper("conv.f", conv.f, except && except.getAttribute("data-path") === "conv.f" ? except : null, dec, state.conv.source !== "F");
+      writeStepper("conv.c", conv.c, except && except.getAttribute("data-path") === "conv.c" ? except : null, dec, state.conv.source !== "C");
+      document.getElementById("out-k").textContent = fmtWide(conv.k);
+      document.getElementById("out-r").textContent = fmtWide(conv.r);
+      document.getElementById("out-chirps").textContent = fmtChirps(cricketChirps(conv.f), state.conv.tenths);
+      main.querySelectorAll("[data-source]").forEach(function (btn) {
+        btn.classList.toggle("on", btn.getAttribute("data-source") === state.conv.source);
+      });
+      document.getElementById("btn-tenths").textContent = state.conv.tenths ? "Increment: tenths" : "Increment: ones";
+    } else if (ws === "forecast") {
+      syncForecast();
+    }
+  }
+
+  function syncForecast() {
+    var w = state.wbf;
+    document.getElementById("wbf-prompt").textContent = w.prompt;
+    document.getElementById("wbf-report").textContent = w.report;
+    var bar = document.getElementById("barometer");
+    if (document.activeElement !== bar) bar.value = w.barRaw;
+    document.querySelectorAll("[data-compass='cwd']").forEach(function (b) {
+      b.classList.toggle("on", w.cwd === b.getAttribute("data-dir"));
+    });
+    document.querySelectorAll("[data-compass='pwd']").forEach(function (b) {
+      b.classList.toggle("on", w.pwd === b.getAttribute("data-dir"));
+    });
+    document.getElementById("compass-cwd").classList.toggle("dim", w.lock !== "cwd");
+    document.getElementById("compass-pwd").classList.toggle("dim", w.lock !== "pwd");
+    document.getElementById("trend-box").classList.toggle("dim", w.lock !== "trend");
+    document.getElementById("rate-box").classList.toggle("dim", w.lock !== "rate");
+    document.querySelectorAll("[data-trend]").forEach(function (b) {
+      b.classList.toggle("on", w.trend === b.getAttribute("data-trend"));
+    });
+    document.querySelectorAll("[data-rate]").forEach(function (b) {
+      b.classList.toggle("on", w.rate === b.getAttribute("data-rate"));
+    });
+    document.getElementById("btn-calc").disabled = !(w.lock === "calc" && w.cwd && w.pwd && w.trend && w.rate);
+  }
+
+  function bindPanel() {
+    bindSteppers();
+    var ws = state.workspace;
+    main.querySelectorAll("[data-reset]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var kind = btn.getAttribute("data-reset");
+        if (kind === "dew") { state.dew.temp = DEFAULTS.dewTemp; state.dew.hum = DEFAULTS.dewHum; }
+        if (kind === "chill") { state.chill.temp = DEFAULTS.wcTemp; state.chill.wind = DEFAULTS.wcWind; }
+        if (kind === "thi") { state.thi.temp = DEFAULTS.thiTemp; state.thi.hum = DEFAULTS.thiHum; }
+        if (kind === "heat") { state.heat.temp = DEFAULTS.hiTemp; state.heat.hum = DEFAULTS.hiHum; }
+        if (kind === "freeze") state.conv.f = DEFAULTS.freezeF;
+        if (kind === "boil") state.conv.f = DEFAULTS.boilF;
+        syncPanel();
+      });
+    });
+    var dewAlert = document.getElementById("alert-dew");
+    if (dewAlert) dewAlert.addEventListener("click", function () { notice(COPY.DP_ALERT_TITLE, COPY.DP_ALERT_BODY); });
+    var chillAlert = document.getElementById("alert-chill");
+    if (chillAlert) chillAlert.addEventListener("click", function () {
+      notice(COPY.WC_ALERT_TITLE, wcAlertBody(fmt2(windChillF(state.chill.temp, state.chill.wind)), state.chill.temp));
+    });
+    var thiA = document.getElementById("alert-thi");
+    if (thiA) thiA.addEventListener("click", function () {
+      notice(COPY.THI_ALERT_TITLE, thiAlertBody(fmt2(thi(state.thi.temp, state.thi.hum))));
+    });
+    var heatA = document.getElementById("alert-heat");
+    if (heatA) heatA.addEventListener("click", function () {
+      notice(COPY.HI_ALERT_TITLE, hiAlertBody(fmt2(heatIndex(state.heat.temp, state.heat.hum).value)));
+    });
+    main.querySelectorAll("[data-source]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state.conv.source = btn.getAttribute("data-source");
+        syncPanel();
+      });
+    });
+    var tenths = document.getElementById("btn-tenths");
+    if (tenths) tenths.addEventListener("click", function () {
+      state.conv.tenths = !state.conv.tenths;
+      syncPanel();
+    });
+    var cricket = document.getElementById("btn-cricket");
+    if (cricket) cricket.addEventListener("click", function () {
+      var conv = fromFahrenheit(state.conv.f);
+      notice(COPY.CRICKET_TITLE, cricketBody(conv.f, cricketChirps(conv.f)));
+    });
+    if (ws === "forecast") bindForecast();
+  }
+
+  function resetWbf(keepReport) {
+    var w = state.wbf;
+    w.cwd = w.pwd = w.trend = w.rate = null;
+    w.lock = "cwd";
+    w.prompt = keepReport ? COPY.WBF_PROMPT_AGAIN : COPY.WBF_PROMPT_START;
+    if (!keepReport) w.report = WBF_STEPS;
+  }
+
+  function bindForecast() {
+    var bar = document.getElementById("barometer");
+    bar.addEventListener("input", function () {
+      var v = bar.value;
+      if (v === "") { state.wbf.barRaw = ""; return; }
+      if (v.startsWith("-") || isNaN(Number(v))) {
+        notice(COPY.BAROMETER_NOTICE_TITLE, COPY.BAROMETER_NOTICE);
+        state.wbf.barRaw = "";
+        bar.value = "";
+        return;
+      }
+      state.wbf.barRaw = v;
+    });
+    main.querySelectorAll("[data-compass]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var which = btn.getAttribute("data-compass");
+        var d = btn.getAttribute("data-dir");
+        var w = state.wbf;
+        if (which === "cwd" && w.lock === "cwd") {
+          w.cwd = d; w.pwd = w.trend = w.rate = null; w.lock = "pwd"; w.prompt = COPY.WBF_PROMPT_PREV;
+        } else if (which === "pwd" && w.lock === "pwd") {
+          w.pwd = d; w.trend = w.rate = null; w.lock = "trend"; w.prompt = COPY.WBF_PROMPT_TREND;
+        }
+        syncForecast();
+      });
+    });
+    main.querySelectorAll("[data-trend]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var w = state.wbf;
+        if (w.lock !== "trend") return;
+        w.trend = btn.getAttribute("data-trend");
+        if (w.trend === "S") {
+          w.rate = "N/A"; w.lock = "calc"; w.prompt = COPY.WBF_PROMPT_CALC;
+        } else {
+          w.rate = null; w.lock = "rate"; w.prompt = COPY.WBF_PROMPT_RATE;
+        }
+        syncForecast();
+      });
+    });
+    main.querySelectorAll("[data-rate]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var w = state.wbf;
+        if (w.lock !== "rate") return;
+        var r = btn.getAttribute("data-rate");
+        if (r === "N/A") return;
+        w.rate = r; w.lock = "calc"; w.prompt = COPY.WBF_PROMPT_CALC;
+        syncForecast();
+      });
+    });
+    document.getElementById("btn-calc").addEventListener("click", function () {
+      var w = state.wbf;
+      if (!(w.lock === "calc" && w.cwd && w.pwd && w.trend && w.rate)) return;
+      var cbp = Number(w.barRaw);
+      if (!isFinite(cbp)) { notice(COPY.BAROMETER_NOTICE_TITLE, COPY.BAROMETER_NOTICE); return; }
+      w.report = windBarometerForecast(cbp, w.cwd, w.pwd, w.trend, w.rate);
+      resetWbf(true);
+      syncForecast();
+    });
+  }
+
+  function go(id) {
+    if (id === "forecast") resetWbf(false);
+    state.workspace = id;
+    renderNav();
+    main.innerHTML = templates()[id];
+    bindPanel();
+    syncPanel();
+  }
+
+  navEl.addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-go]");
+    if (btn) go(btn.getAttribute("data-go"));
+  });
+
+  document.body.addEventListener("click", function (e) {
+    var help = e.target.closest("[data-help]");
+    if (!help) return;
+    var kind = help.getAttribute("data-help");
+    if (kind === "about") notice(COPY.ABOUT_TITLE, COPY.ABOUT_BODY);
+    if (kind === "wbf") notice(COPY.ABOUT_WBF_TITLE, COPY.ABOUT_WBF_BODY);
+    if (kind === "possible") notice(COPY.POSSIBLE_TITLE, POSSIBLE_FORECASTS.join("\n"));
+  });
+
+  function tick() {
+    var now = new Date();
+    document.getElementById("dateLabel").textContent = now.toLocaleDateString(undefined, {
+      weekday: "short", month: "short", day: "numeric", year: "numeric"
+    });
+    document.getElementById("timeLabel").textContent = now.toLocaleTimeString(undefined, {
+      hour: "numeric", minute: "2-digit", second: "2-digit"
+    });
+  }
+
+  renderNav();
+  renderChrome();
+  go("clear");
+  tick();
+  setInterval(tick, 1000);
+
+  var saveBtn = document.getElementById("savePage");
+  if (saveBtn) {
+    saveBtn.addEventListener("click", function () {
+      function dump(text) {
+        var blob = new Blob([text], { type: "text/html;charset=utf-8" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "Weather11.html";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+      }
+      fetch(location.href)
+        .then(function (r) { return r.text(); })
+        .then(dump)
+        .catch(function () {
+          dump("<!DOCTYPE html>\n" + document.documentElement.outerHTML);
+        });
+    });
+  }
+})();
+</script>
+</body>
+</html>
