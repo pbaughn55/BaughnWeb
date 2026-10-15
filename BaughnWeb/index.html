@@ -1,19 +1,162 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Welcome to Baughn.Net</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baughn.Net Weather Page</title>
+<style>
+  :root {
+    --sky: #e8f4fc;
+    --card: #ffffff;
+    --navy: #0f3a5f;
+    --accent: #1a6aa8;
+    --muted: #5a7184;
+    --shadow: 0 4px 16px rgba(15, 58, 95, 0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background: linear-gradient(180deg, #d6ebf7 0%, var(--sky) 40%, #f7fbfe 100%);
+    color: var(--navy);
+    min-height: 100vh;
+  }
+  header {
+    text-align: center;
+    padding: 2.5rem 1rem 1.5rem;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 2.2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  header p {
+    margin: 0.4rem 0 0;
+    color: var(--muted);
+    font-size: 1.05rem;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+    max-width: 1100px;
+    margin: 0 auto 3rem;
+    padding: 0 1.25rem;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 1.4rem 1.3rem;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    border: 1px solid rgba(15, 58, 95, 0.06);
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(15, 58, 95, 0.12);
+  }
+  .icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: #f0f7fc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+  }
+  .card h2 {
+    margin: 0 0 0.3rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .card p {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  footer {
+    text-align: center;
+    padding: 1rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+</style>
 </head>
 <body>
-<h1>Baughn.Net Weather Page</h1>
-<ul>
-<li><a href="https://tempestwx.com/station/228107/grid" target="_blank">PANDA Station - Live Data</a></li>
-<li><a href="https://tempestwx.com/station/228107/" target="_blank">PANDA Station - Station</a></li>
-<li><a href="https://www.wunderground.com/dashboard/pws/KFLSANTA89" target="_blank">PANDA Station on Wunderground</a></li>
-<li><a href="Weather/CloudObserver10.html" target="_blank">My Cloud Observer & Forecasting App</a></li>
-<li><a href="Weather/Weather11-Web.html" target="_blank">My Original 1986 Weather Baromenter Forecasting and Conversions App</a></li>
-<li><a href="https://app.weathercloud.net/d5760176020#current" target="_blank">Cambria Weather Station - Palm Coast (WeatherCloud)</a></li>
-<li><a href="https://www.wunderground.com/dashboard/pws/KFLPALMC211" target="_blank">Cambria Weather Station - Palm Coast (Weather Underground)</a></li>
-<!-- <li><a href="https://app.weathercloud.net/d5760176020#current" target="_blank">DESCRIPTION 6</a></li> -->
-</ul>
+<header>
+  <h1>Baughn.Net Weather</h1>
+  <p>Stations, observations, and forecasting tools</p>
+</header>
+
+<main class="grid">
+  <a class="card" href="https://tempestwx.com/station/228107/grid" target="_blank">
+    <div class="icon">📡</div>
+    <div>
+      <h2>PANDA Station — Live Data</h2>
+      <p>Real-time readings from the Tempest station.</p>
+    </div>
+  </a>
+
+  <a class="card" href="https://tempestwx.com/station/228107/" target="_blank">
+    <div class="icon">🏠</div>
+    <div>
+      <h2>PANDA Station</h2>
+      <p>Station overview and history.</p>
+    </div>
+  </a>
+
+  <a class="card" href="https://www.wunderground.com/dashboard/pws/KFLSANTA89" target="_blank">
+    <div class="icon">📊</div>
+    <div>
+      <h2>PANDA on Weather Underground</h2>
+      <p>Public dashboard for KFLSANTA89.</p>
+    </div>
+  </a>
+
+  <a class="card" href="Weather/CloudObserver10.html" target="_blank">
+    <div class="icon">☁️</div>
+    <div>
+      <h2>Cloud Observer & Forecasting</h2>
+      <p>Local cloud observation and forecasting app.</p>
+    </div>
+  </a>
+
+  <a class="card" href="Weather/Weather11-Web.html" target="_blank">
+    <div class="icon">🧭</div>
+    <div>
+      <h2>Weather 11 (1986–)</h2>
+      <p>Original wind-barometer forecasting and conversions.</p>
+    </div>
+  </a>
+
+  <a class="card" href="https://app.weathercloud.net/d5760176020#current" target="_blank">
+    <div class="icon">🌴</div>
+    <div>
+      <h2>Cambria Station — WeatherCloud</h2>
+      <p>Palm Coast observations on WeatherCloud.</p>
+    </div>
+  </a>
+
+  <a class="card" href="https://www.wunderground.com/dashboard/pws/KFLPALMC211" target="_blank">
+    <div class="icon">📈</div>
+    <div>
+      <h2>Cambria Station — Weather Underground</h2>
+      <p>Public dashboard for KFLPALMC211.</p>
+    </div>
+  </a>
+</main>
+
+<footer>
+  Baughn.Net
+</footer>
 </body>
 </html>
