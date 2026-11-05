@@ -8,13 +8,10 @@
         y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
     })(window, document, "clarity", "script", "yzsn4a4lxc");
 </script>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Baughn.Net Weather Page</title>
-<meta name="description" content="Baughn.Net Weather: live Tempest station data, historical observations, Weather Underground dashboards, cloud observing, and the original Weather11 wind-barometer forecasting tools.">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Baughn.Net Weather Page</title>
+<meta name="description" content="Baughn.Net Weather: live Tempest station data, historical observations, Weather Underground dashboards, cloud observing, and the original Weather11 wind-barometer forecasting tools.">
 <style>
   :root {
     --sky: #e8f4fc;
@@ -52,7 +49,7 @@
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.25rem;
     max-width: 1100px;
-    margin: 0 auto 3rem;
+    margin: 0 auto 2rem;
     padding: 0 1.25rem;
   }
   .card {
@@ -94,6 +91,43 @@
     color: var(--muted);
     line-height: 1.4;
   }
+  .links-section {
+    max-width: 1100px;
+    margin: 0 auto 3rem;
+    padding: 0 1.25rem;
+  }
+  .links-button {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    background: linear-gradient(135deg, #1a6aa8, #0f3a5f);
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: 16px;
+    padding: 1.5rem 1.75rem;
+    box-shadow: 0 6px 20px rgba(15, 58, 95, 0.18);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .links-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(15, 58, 95, 0.25);
+  }
+  .links-button .icon {
+    background: rgba(255, 255, 255, 0.15);
+    width: 56px;
+    height: 56px;
+    font-size: 1.8rem;
+  }
+  .links-button h2 {
+    margin: 0 0 0.25rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+  .links-button p {
+    margin: 0;
+    font-size: 0.95rem;
+    opacity: 0.9;
+  }
   footer {
     text-align: center;
     padding: 1rem;
@@ -108,62 +142,74 @@
   <p>Stations, observations, and forecasting tools</p>
 </header>
 
-<main class="grid">
-  <a class="card" href="https://tempestwx.com/station/228107/grid" target="_blank">
-    <div class="icon">📡</div>
-    <div>
-      <h2>PANDA Station — Live Data</h2>
-      <p>Real-time readings from the Tempest station.</p>
-    </div>
-  </a>
+<main>
+  <div class="grid">
+    <a class="card" href="https://tempestwx.com/station/228107/grid" target="_blank">
+      <div class="icon">📡</div>
+      <div>
+        <h2>PANDA Station — Live Data</h2>
+        <p>Real-time readings from the Tempest station.</p>
+      </div>
+    </a>
 
-  <a class="card" href="https://tempestwx.com/station/228107/" target="_blank">
-    <div class="icon">🏠</div>
-    <div>
-      <h2>PANDA Station</h2>
-      <p>Station overview and history.</p>
-    </div>
-  </a>
+    <a class="card" href="https://tempestwx.com/station/228107/" target="_blank">
+      <div class="icon">🏠</div>
+      <div>
+        <h2>PANDA Station</h2>
+        <p>Station overview and history.</p>
+      </div>
+    </a>
 
-  <a class="card" href="https://www.wunderground.com/dashboard/pws/KFLSANTA89" target="_blank">
-    <div class="icon">📊</div>
-    <div>
-      <h2>PANDA on Weather Underground</h2>
-      <p>Public dashboard for KFLSANTA89.</p>
-    </div>
-  </a>
+    <a class="card" href="https://www.wunderground.com/dashboard/pws/KFLSANTA89" target="_blank">
+      <div class="icon">📊</div>
+      <div>
+        <h2>PANDA on Weather Underground</h2>
+        <p>Public dashboard for KFLSANTA89.</p>
+      </div>
+    </a>
 
-  <a class="card" href="Weather/CloudObserver10.html" target="_blank">
-    <div class="icon">☁️</div>
-    <div>
-      <h2>Cloud Observer & Forecasting</h2>
-      <p>My local cloud observation and forecasting app.</p>
-    </div>
-  </a>
+    <a class="card" href="Weather/CloudObserver10.html" target="_blank">
+      <div class="icon">☁️</div>
+      <div>
+        <h2>Cloud Observer & Forecasting</h2>
+        <p>My local cloud observation and forecasting app.</p>
+      </div>
+    </a>
 
-  <a class="card" href="Weather/Weather11-Web.html" target="_blank">
-    <div class="icon">🧭</div>
-    <div>
-      <h2>Weather 11 (1986–)</h2>
-      <p>My original wind-barometer forecasting and conversions.</p>
-    </div>
-  </a>
+    <a class="card" href="Weather/Weather11-Web.html" target="_blank">
+      <div class="icon">🧭</div>
+      <div>
+        <h2>Weather 11 (1986–)</h2>
+        <p>My original wind-barometer forecasting and conversions.</p>
+      </div>
+    </a>
 
-  <a class="card" href="https://app.weathercloud.net/d5760176020#current" target="_blank">
-    <div class="icon">🌴</div>
-    <div>
-      <h2>Cambria Station — WeatherCloud</h2>
-      <p>Palm Coast observations on WeatherCloud.</p>
-    </div>
-  </a>
+    <a class="card" href="https://app.weathercloud.net/d5760176020#current" target="_blank">
+      <div class="icon">🌴</div>
+      <div>
+        <h2>Cambria Station — WeatherCloud</h2>
+        <p>Palm Coast observations on WeatherCloud.</p>
+      </div>
+    </a>
 
-  <a class="card" href="https://www.wunderground.com/dashboard/pws/KFLPALMC211" target="_blank">
-    <div class="icon">📈</div>
-    <div>
-      <h2>Cambria Station — Weather Underground</h2>
-      <p>Public dashboard for KFLPALMC211.</p>
-    </div>
-  </a>
+    <a class="card" href="https://www.wunderground.com/dashboard/pws/KFLPALMC211" target="_blank">
+      <div class="icon">📈</div>
+      <div>
+        <h2>Cambria Station — Weather Underground</h2>
+        <p>Public dashboard for KFLPALMC211.</p>
+      </div>
+    </a>
+  </div>
+
+  <div class="links-section">
+    <a class="links-button" href="Weather/MajorWeatherLinks.html" target="_blank">
+      <div class="icon">🔗</div>
+      <div>
+        <h2>Links to Other Major Weather Sites</h2>
+        <p>National Weather Service, NOAA, Weather Channel, AccuWeather, Windy, and more.</p>
+      </div>
+    </a>
+  </div>
 </main>
 
 <footer>
