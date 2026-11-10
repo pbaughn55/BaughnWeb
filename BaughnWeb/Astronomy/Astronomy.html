@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "yzsn4a4lxc");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baughn.Net Astronomy Photos</title>
+<meta name="description" content="Baughn.Net Astronomy: nebulae, galaxies, and planets photographed with my telescope.">
+<style>
+  :root {
+    --bg: #070a1c;
+    --card: #11163a;
+    --text: #e8ecff;
+    --muted: #9aa3c7;
+    --accent: #7b8cff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background: radial-gradient(ellipse at top, #1b2150 0%, var(--bg) 60%);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header { text-align: center; padding: 2.5rem 1rem 1.5rem; }
+  header h1 { margin: 0; font-size: 2.2rem; font-weight: 600; letter-spacing: -0.02em; }
+  header p { margin: 0.4rem 0 0; color: var(--muted); font-size: 1.05rem; }
+  #status { text-align: center; color: var(--muted); padding: 1rem; }
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.25rem;
+    max-width: 1400px;
+    margin: 0 auto 2rem;
+    padding: 0 1.25rem;
+  }
+  .tile {
+    background: var(--card);
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid rgba(123, 140, 255, 0.15);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+  }
+  .tile:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(123, 140, 255, 0.25); }
+  .tile .thumb { aspect-ratio: 1 / 1; width: 100%; background: #000; display: block; }
+  .tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tile .caption { padding: 0.75rem 0.9rem; }
+  .tile .caption strong { display: block; font-size: 1rem; font-weight: 600; }
+  .tile .caption span { font-size: 0.82rem; color: var(--muted); }
+
+  .lightbox {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.94);
+    display: none; align-items: center; justify-content: center;
+    flex-direction: column; z-index: 1000;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 96vw; max-height: 86vh; object-fit: contain; }
+  .lightbox .lb-caption { margin-top: 0.75rem; color: var(--text); text-align: center; }
+  .lightbox .lb-caption a { color: var(--accent); margin-left: 0.75rem; font-size: 0.9rem; }
+  .lb-btn {
+    position: absolute; background: rgba(255,255,255,0.08); color: #fff;
+    border: none; font-size: 2rem; width: 56px; height: 56px; border-radius: 50%;
+    cursor: pointer;
+  }
+  .lb-btn:hover { background: rgba(255,255,255,0.2); }
+  .lb-close { top: 1rem; right: 1rem; }
+  .lb-prev { left: 1rem; top: 50%; transform: translateY(-50%); }
+  .lb-next { right: 1rem; top: 50%; transform: translateY(-50%); }
+  footer { text-align: center; padding: 1rem; color: var(--muted); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Baughn.Net Astronomy</h1>
+  <p>Photos from my telescope. Click any image for the full-size view.</p>
+</header>
+
+<main>
+  <div id="status">Loading photos…</div>
+  <div class="gallery" id="gallery"></div>
+</main>
+
+<div class="lightbox" id="lightbox" aria-hidden="true">
+  <button class="lb-btn lb-close" id="lbClose" aria-label="Close">×</button>
+  <button class="lb-btn lb-prev" id="lbPrev" aria-label="Previous">‹</button>
+  <img id="lbImg" alt="">
+  <div class="lb-caption"><span id="lbTitle"></span><a id="lbOpen" href="#" target="_blank">Open original</a></div>
+  <button class="lb-btn lb-next" id="lbNext" aria-label="Next">›</button>
+</div>
+
+<footer>Baughn.Net</footer>
+
+<script>
+  // The photo list is read live from the GitHub repo, so any image added to
+  // BaughnWeb/Astronomy/Photos shows up here automatically after it's deployed.
+  const REPO = "pbaughn55/BaughnWeb";
+  const BRANCH = "main";
+  const FOLDER = "BaughnWeb/Astronomy/Photos";
+  const IMAGE_EXT = /\.(png|jpe?g|gif|webp|bmp|tiff?|avif)$/i;
+
+  const gallery = document.getElementById("gallery");
+  const statusEl = document.getElementById("status");
+  let photos = [];
+  let current = 0;
+
+  function prettyName(file) {
+    let base = file.replace(/\.[^.]+$/, "");
+    let date = "";
+    const m = base.match(/(\d{4})(\d{2})(\d{2})-\d{6}/);
+    if (m) {
+      const d = new Date(+m[1], +m[2] - 1, +m[3]);
+      date = d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+    }
+    let title = base
+      .replace(/-?Odyssey_Pro-\d{8}-\d{6}/i, "")
+      .replace(/\s*\((Large|\d+)\)/gi, "")
+      .replace(/__/g, ": ")
+      .replace(/_/g, " ")
+      .trim();
+    if (!title) title = "Untitled";
+    return { title, date, sortKey: m ? m[1] + m[2] + m[3] : "00000000" };
+  }
+
+  function render() {
+    gallery.innerHTML = "";
+    photos.forEach((p, i) => {
+      const btn = document.createElement("button");
+      btn.className = "tile";
+      btn.innerHTML =
+        '<div class="thumb"><img loading="lazy" alt=""></div>' +
+        '<div class="caption"><strong></strong><span></span></div>';
+      btn.querySelector("img").src = p.url;
+      btn.querySelector("img").alt = p.title;
+      btn.querySelector("strong").textContent = p.title;
+      btn.querySelector("span").textContent = p.date;
+      btn.addEventListener("click", () => openLightbox(i));
+      gallery.appendChild(btn);
+    });
+  }
+
+  const lb = document.getElementById("lightbox");
+  const lbImg = document.getElementById("lbImg");
+  const lbTitle = document.getElementById("lbTitle");
+  const lbOpen = document.getElementById("lbOpen");
+
+  function openLightbox(i) {
+    current = (i + photos.length) % photos.length;
+    const p = photos[current];
+    lbImg.src = p.url;
+    lbImg.alt = p.title;
+    lbTitle.textContent = p.title + (p.date ? " · " + p.date : "");
+    lbOpen.href = p.url;
+    lb.classList.add("open");
+    lb.setAttribute("aria-hidden", "false");
+  }
+  function closeLightbox() {
+    lb.classList.remove("open");
+    lb.setAttribute("aria-hidden", "true");
+    lbImg.src = "";
+  }
+  document.getElementById("lbClose").onclick = closeLightbox;
+  document.getElementById("lbPrev").onclick = (e) => { e.stopPropagation(); openLightbox(current - 1); };
+  document.getElementById("lbNext").onclick = (e) => { e.stopPropagation(); openLightbox(current + 1); };
+  lb.addEventListener("click", (e) => { if (e.target === lb) closeLightbox(); });
+  document.addEventListener("keydown", (e) => {
+    if (!lb.classList.contains("open")) return;
+    if (e.key === "Escape") closeLightbox();
+    if (e.key === "ArrowLeft") openLightbox(current - 1);
+    if (e.key === "ArrowRight") openLightbox(current + 1);
+  });
+
+  fetch(`https://api.github.com/repos/${REPO}/contents/${FOLDER}?ref=${BRANCH}`)
+    .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then((items) => {
+      photos = items
+        .filter((f) => f.type === "file" && IMAGE_EXT.test(f.name))
+        .map((f) => Object.assign({ url: "Photos/" + encodeURIComponent(f.name) }, prettyName(f.name)))
+        .sort((a, b) => b.sortKey.localeCompare(a.sortKey)); // newest first
+      statusEl.style.display = photos.length ? "none" : "block";
+      if (!photos.length) statusEl.textContent = "No photos yet.";
+      render();
+    })
+    .catch((err) => {
+      statusEl.textContent = "Couldn't load the photo list right now. Please try again in a few minutes.";
+      console.error(err);
+    });
+</script>
+</body>
+</html>
